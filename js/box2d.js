@@ -1,166 +1,229 @@
+  
+ var   b2Vec2 = Box2D.Common.Math.b2Vec2
+    ,  b2AABB = Box2D.Collision.b2AABB
+    ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
+    ,	b2Body = Box2D.Dynamics.b2Body
+    ,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+    ,	b2Fixture = Box2D.Dynamics.b2Fixture
+    ,	b2World = Box2D.Dynamics.b2World
+    ,	b2MassData = Box2D.Collision.Shapes.b2MassData
+    ,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
+    ,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+    ,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
+    ,   b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
+    ,   b2Mat22 = Box2D.Common.Math.b2Mat22
+    ;
 
-/***************************/
-/*          BOX2D          */
-/***************************/
+var world;
+var worldLimits;
+var scale = { x: 1, y: 1};
+var scaleDraw;
+var tatamiSize = 1;
 
-function createWorld() {
-	var worldAABB = new b2AABB();
-	worldAABB.minVertex.Set(0, 0);
-	worldAABB.maxVertex.Set(200, 200);
-	var gravity = new b2Vec2(0, 300);
-	var doSleep = true;
-	var world = new b2World(worldAABB, gravity, doSleep);
-    
-    // Bounds
-    var tatamisize = 8;
-    
-    var w = worldAABB.maxVertex.x;
-    var h = worldAABB.maxVertex.y;
-    
-    scale = new b2Vec2(canvas.width / w, canvas.height / h);
-    
-    // left
-	createBox(world, 0, 0, tatamisize, h + tatamisize, true);
-    // right
-	createBox(world, w, 0, tatamisize, h + tatamisize, true);
-    // up
-	createBox(world, 0, 0, w + tatamisize, tatamisize, true);
-    // down
-	ground = createBox(world, 0, h, w + tatamisize, tatamisize, true);
-    
-	return world;
-}
+init();
 
-function createBox(world, x, y, width, height, fixed) {
-	if (typeof(fixed) == 'undefined') fixed = true;
-	var boxSd = new b2BoxDef();
-	if (!fixed) boxSd.density = 1.0;
-	boxSd.extents.Set(width, height);
-	boxSd.restitution = 0;
-    boxSd.friction = 1.0;
-	var boxBd = new b2BodyDef();
-	boxBd.AddShape(boxSd);
-	boxBd.position.Set(x,y);
-	return world.CreateBody(boxBd)
-}
+  function init() {
 
-function createBall(world, x, y) {
-	var ballSd = new b2CircleDef();
-	ballSd.density = 1.0;
-	ballSd.radius = 20;
-	ballSd.restitution = 1.0;
-	ballSd.friction = 0;
-	var ballBd = new b2BodyDef();
-	ballBd.AddShape(ballSd);
-	ballBd.position.Set(x,y);
-	return world.CreateBody(ballBd);
-}
+     world = new b2World(
+           new b2Vec2(0, 10)    //gravity
+        ,  true                 //allow sleep
+     );
+      
+      console.log(world);
 
-function createPoly(points) {
-    var poly = new b2PolyDef();
-    poly.vertexCount = points.length;
-    for (var v = 0; v < points.length; v++) {
-        poly.vertices[v].Set(points[v][0], points[v][1]);
-    }
-    return poly;
-}
+     var fixDef = new b2FixtureDef;
+     fixDef.density = 1.0;
+     fixDef.friction = 0.5;
+     fixDef.restitution = 0.2;
 
-/************************************/
-/*          DRAW FUNCTIONS          */
-/************************************/
+     var bodyDef = new b2BodyDef;
 
-function drawWorld(world, context) {
-//	for (var j = world.m_jointList; j; j = j.m_next) {
-//		drawJoint(j, context);
-//	}
-	for (var b = world.m_bodyList; b; b = b.m_next) {
-		for (var s = b.GetShapeList(); s != null; s = s.GetNext()) {
-			drawShape(s, context);
-		}
-	}
-}
+     //create ground
+     bodyDef.type = b2Body.b2_staticBody;
+     fixDef.shape = new b2PolygonShape;
+      
+      
+      worldLimits = { x: 16, y: 24 };
+      
+      scaleDraw = Math.max(worldLimits.x, worldLimits.y);
+      scaleDraw = Math.min(window.innerWidth / scaleDraw, window.innerHeight / scaleDraw);
+      
+      //
+     fixDef.shape.SetAsBox(worldLimits.x/2, tatamiSize);
+     bodyDef.position.Set(worldLimits.x/2, worldLimits.y);
+     world.CreateBody(bodyDef).CreateFixture(fixDef);
+      
+     bodyDef.position.Set(worldLimits.x/2, 0);
+     world.CreateBody(bodyDef).CreateFixture(fixDef);
+      
+      //
+      
+     fixDef.shape.SetAsBox(tatamiSize, worldLimits.y/2);
+     bodyDef.position.Set(0, worldLimits.y/2);
+     world.CreateBody(bodyDef).CreateFixture(fixDef);
+      
+     bodyDef.position.Set(worldLimits.x, worldLimits.y/2);
+     world.CreateBody(bodyDef).CreateFixture(fixDef);
 
-function drawJoint(joint, context) {
-	var b1 = joint.m_body1;
-	var b2 = joint.m_body2;
-	var x1 = b1.m_position;
-	var x2 = b2.m_position;
-	var p1 = joint.GetAnchor1();
-	var p2 = joint.GetAnchor2();
-	context.strokeStyle = '#00eeee';
-	context.beginPath();
-	switch (joint.m_type) {
-	case b2Joint.e_distanceJoint:
-		context.moveTo(p1.x, p1.y);
-		context.lineTo(p2.x, p2.y);
-		break;
+     //setup debug draw
+     var debugDraw = new b2DebugDraw();
+        debugDraw.SetSprite(window.document.getElementById("canvas").getContext("2d"));
+        debugDraw.SetDrawScale(scaleDraw);
+        debugDraw.SetFillAlpha(0);
+        debugDraw.SetLineThickness(1.0);
+        debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+        world.SetDebugDraw(debugDraw);
+      
+      //
+        var listener = new Box2D.Dynamics.b2ContactListener;
+        listener.BeginContact = function(contact) {
+            var body1 = contact.GetFixtureA().GetBody();
+            var body2 = contact.GetFixtureB().GetBody();
+            if (body1.GetUserData() && body2.GetUserData()) {
+                var puzzlePiece = puzzlePieces[body1.GetUserData().pieceIndex];
+                puzzlePiece.checkPattern(puzzlePieces[body2.GetUserData().pieceIndex]);
+            }
+            
+            drawLine(
+                Box2D.Common.Math.b2Math.MulFV(scaleDraw, body1.GetPosition()), 
+                Box2D.Common.Math.b2Math.MulFV(scaleDraw, body2.GetPosition()));
+            
+        }
+        listener.EndContact = function(contact) {
+        // console.log(contact.GetFixtureA().GetBody().GetUserData());
+        }
+        listener.PostSolve = function(contact, impulse) {
 
-	case b2Joint.e_pulleyJoint:
-		// TODO
-		break;
+        }
+        listener.PreSolve = function(contact, oldManifold) {
 
-	default:
-		if (b1 == world.m_groundBody) {
-			context.moveTo(p1.x, p1.y);
-			context.lineTo(x2.x, x2.y);
-		}
-		else if (b2 == world.m_groundBody) {
-			context.moveTo(p1.x, p1.y);
-			context.lineTo(x1.x, x1.y);
-		}
-		else {
-			context.moveTo(x1.x, x1.y);
-			context.lineTo(p1.x, p1.y);
-			context.lineTo(x2.x, x2.y);
-			context.lineTo(p2.x, p2.y);
-		}
-		break;
-	}
-	context.stroke();
-}
+        }
+        this.world.SetContactListener(listener);
 
-function drawShape(shape, context) {
-	context.strokeStyle = '#ff3333';
-	context.beginPath();
-	switch (shape.m_type) {
-	case b2Shape.e_circleShape:
-		{
-			var circle = shape;
-			var pos = circle.m_position;
-			var r = circle.m_radius;
-			var segments = 16.0;
-			var theta = 0.0;
-			var dtheta = 2.0 * Math.PI / segments;
-			// draw circle
-			context.moveTo(pos.x + r, pos.y);
-			for (var i = 0; i < segments; i++) {
-				var d = new b2Vec2(r * Math.cos(theta), r * Math.sin(theta));
-				var v = b2Math.AddVV(pos, d);
-				context.lineTo(v.x, v.y);
-				theta += dtheta;
-			}
-			context.lineTo(pos.x + r, pos.y);
-	
-			// draw radius
-			context.moveTo(pos.x, pos.y);
-			var ax = circle.m_R.col1;
-			var pos2 = new b2Vec2(pos.x + r * ax.x, pos.y + r * ax.y);
-			context.lineTo(pos2.x, pos2.y);
-		}
-		break;
-	case b2Shape.e_polyShape:
-		{
-			var poly = shape;
-			var tV = b2Math.AddVV(poly.m_position, b2Math.b2MulMV(poly.m_R, poly.m_vertices[0]));
-			context.moveTo(tV.x, tV.y);
-			for (var i = 0; i < poly.m_vertexCount; i++) {
-				var v = b2Math.AddVV(poly.m_position, b2Math.b2MulMV(poly.m_R, poly.m_vertices[i]));
-				context.lineTo(v.x, v.y);
-			}
-			context.lineTo(tV.x, tV.y);
-		}
-		break;
-	}
-	context.stroke();
-}
+      
+      
 
+     window.setInterval(update, 1000 / 60);
+
+     //mouse
+
+     var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint;
+     var canvasPosition = getElementPosition(window.document.getElementById("canvas"));
+
+     document.addEventListener("mousedown", function(e) {
+        isMouseDown = true;
+        handleMouseMove(e);
+        document.addEventListener("mousemove", handleMouseMove, true);
+     }, true);
+
+     document.addEventListener("mouseup", function() {
+         
+         if (!mouseJoint) {
+              createPuzzlePiece(mouseX, mouseY);
+         }
+         
+        document.removeEventListener("mousemove", handleMouseMove, true);
+        isMouseDown = false;
+        mouseX = undefined;
+        mouseY = undefined;
+         
+     }, true);
+
+     function handleMouseMove(e) {
+        mouseX = (e.clientX - canvasPosition.x) / scaleDraw;
+        mouseY = (e.clientY - canvasPosition.y) / scaleDraw;
+     };
+
+     function getBodyAtMouse() {
+        mousePVec = new b2Vec2(mouseX, mouseY);
+        var aabb = new b2AABB();
+        aabb.lowerBound.Set(mouseX - 0.001, mouseY - 0.001);
+        aabb.upperBound.Set(mouseX + 0.001, mouseY + 0.001);
+
+        // Query the world for overlapping shapes.
+
+        selectedBody = null;
+        world.QueryAABB(getBodyCB, aabb);
+        return selectedBody;
+     }
+
+     function getBodyCB(fixture) {
+        if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
+           if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), mousePVec)) {
+              selectedBody = fixture.GetBody();
+              return false;
+           }
+        }
+        return true;
+     }
+
+     //update
+
+     function update() {
+
+        if(isMouseDown && (!mouseJoint)) {
+           var body = getBodyAtMouse();
+           if(body) {
+              var md = new b2MouseJointDef();
+              md.bodyA = world.GetGroundBody();
+              md.bodyB = body;
+              md.target.Set(mouseX, mouseY);
+              md.collideConnected = true;
+              md.maxForce = 300.0 * body.GetMass();
+              mouseJoint = world.CreateJoint(md);
+              body.SetAwake(true);
+           }
+        }
+
+        if(mouseJoint) {
+           if(isMouseDown) {
+              mouseJoint.SetTarget(new b2Vec2(mouseX, mouseY));
+           } else {
+              world.DestroyJoint(mouseJoint);
+              mouseJoint = null;
+           }
+        }
+
+        world.Step(1 / 60, 10, 10);
+
+            context.fillStyle = "rgba(0, 0, 0, 0.1)";
+         context.fillRect(0,0,canvas.width, canvas.height);
+//         context.clearRect(0, 0, canvas.width, canvas.height); 
+//         world.DrawDebugData();
+
+         for (var p = 0; p < puzzlePieces.length; ++p) {
+             var puzzlePiece = puzzlePieces[p];
+             puzzlePiece.draw();
+         }
+
+         drawBackground();
+
+
+        world.ClearForces();
+     };
+      
+     //helpers
+
+     //http://js-tut.aardon.de/js-tut/tutorial/position.html
+     function getElementPosition(element) {
+        var elem=element, tagname="", x=0, y=0;
+
+        while((typeof(elem) == "object") && (typeof(elem.tagName) != "undefined")) {
+           y += elem.offsetTop;
+           x += elem.offsetLeft;
+           tagname = elem.tagName.toUpperCase();
+
+           if(tagname == "BODY")
+              elem=0;
+
+           if(typeof(elem) == "object") {
+              if(typeof(elem.offsetParent) == "object")
+                 elem = elem.offsetParent;
+           }
+        }
+
+        return {x: x, y: y};
+     }
+
+
+  }

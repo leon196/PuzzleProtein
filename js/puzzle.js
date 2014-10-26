@@ -1,7 +1,17 @@
+
+function createPuzzlePiece(x, y)
+{
+    if (x < worldLimits.x && y < worldLimits.y) {
+        var puzzlePiece = new PuzzlePiece();
+        puzzlePiece.initialize(x, y, puzzlePieces.length);
+        puzzlePieces.push(puzzlePiece);
+    }
+}
+
 PuzzlePiece = function()
 {
     // Box2d
-    this.physic;
+    this.body;
     // Draw
     this.shape;
     // Logic
@@ -9,15 +19,30 @@ PuzzlePiece = function()
     
 	this.initialize = function(x, y, index)
     {    
-        this.physic = createBox(world, x, y, puzzlePieceSize, puzzlePieceSize, false);
-        this.physic.puzzlePieceIndex = index;
+        
+
+         var fixDef = new b2FixtureDef;
+         fixDef.density = 1.0;
+         fixDef.friction = 0.5;
+         fixDef.restitution = 0.2;
+
+         var bodyDef = new b2BodyDef;
+         bodyDef.type = b2Body.b2_dynamicBody;
+         fixDef.shape = new b2PolygonShape;
+
+          //
+         fixDef.shape.SetAsBox(1, 1);
+         bodyDef.position.Set(x, y);
+        
+          this.body = world.CreateBody(bodyDef).CreateFixture(fixDef).GetBody();
+        this.body.SetUserData({ pieceIndex: index });
         
         this.patterns = [];
         for (var part = 0; part < 4; ++part) {
             this.patterns.push(Math.random() >= 0.5 ? 1 : 0);
         }
         
-        var size = puzzlePieceSize;
+        var size = 1;
         var assets = [
             [
                 [-size/2, -size],
@@ -39,25 +64,76 @@ PuzzlePiece = function()
         // Contruct Shape
         var point;
         this.shape = [];
-        for (var p = 0; p < 4; ++p) {
+        for (var p = 0; p < 4; ++p) 
+        {
+            // Corner
             point = new b2Vec2(shape_[p][0], shape_[p][1]);
             this.shape.push(point);
             
+            // Pattern
             var pattern = assets[this.patterns[p]];
-            
             for (var pat = 0; pat < pattern.length; ++pat) 
             {
-                var R1 = new b2Mat22(((p) / 4) * Math.PI * 2);
-                point = b2Math.b2MulMV(R1, new b2Vec2(pattern[pat][0], pattern[pat][1]));
-
-                this.shape.push(point);
+                var rotation = new b2Mat22();
+                rotation.Set(((p) / 4) * Math.PI * 2);
+                var position = new b2Vec2(pattern[pat][0], pattern[pat][1]);
+                this.shape.push(Box2D.Common.Math.b2Math.MulMV( rotation, position ));
             }
         }
         
     },
+    
+    this.draw = function() {
+        context.strokeStyle = '#ffffff';
+        context.fillStyle = '#ff0000';
+        context.beginPath();
+        var origin = this.body.GetPosition();
+        var position = this.shape[0];       
+        var rotation = new b2Mat22();
+        rotation.Set(this.body.GetAngle());
+        
+        var point = Box2D.Common.Math.b2Math.AddVV(
+            origin, 
+            Box2D.Common.Math.b2Math.MulMV( rotation, position )
+        );
+        
+        context.moveTo(
+            point.x * scaleDraw, 
+            point.y * scaleDraw);
+        
+        
+        for (var p = 1; p < this.shape.length; ++p)
+        {
+            position = this.shape[p];
+            point = Box2D.Common.Math.b2Math.AddVV(
+                origin, 
+                Box2D.Common.Math.b2Math.MulMV( rotation, position )
+            );
+            context.lineTo(
+            point.x * scaleDraw, 
+            point.y * scaleDraw);
+        }
+        position = this.shape[0];
+        point = Box2D.Common.Math.b2Math.AddVV(
+            origin, 
+            Box2D.Common.Math.b2Math.MulMV( rotation, position )
+        );
+        context.lineTo(
+            point.x * scaleDraw, 
+            point.y * scaleDraw);
+
+//        context.globalCompositeOperation = "xor";
+        context.globalCompositeOperation = "multiply";
+        context.fill();      
+//        context.globalCompositeOperation = "destination-in";  
+        context.globalCompositeOperation = "source-over";  
+        context.stroke();
+    },
+        
         
     this.checkPattern = function(otherPiece)
     {
+        /*
         var dir = new b2Vec2(
             otherPiece.physic.m_position.x - this.physic.m_position.x,
             otherPiece.physic.m_position.y - this.physic.m_position.y);
@@ -122,56 +198,9 @@ PuzzlePiece = function()
 //        context.moveTo(otherPiece.physic.m_position.x, otherPiece.physic.m_position.y);
 //        context.lineTo(otherPiece.physic.m_position.x - vec.x * 16, otherPiece.physic.m_position.y - vec.y * 16);
 //
-//        context.stroke();
-    },
-    
-    this.draw = function() {
-        context.strokeStyle = '#ffffff';
-        context.beginPath();
-        
-        var position = b2Math.AddVV(this.physic.m_position, b2Math.b2MulMV(this.physic.m_R, this.shape[0]));
-        context.moveTo(position.x, position.y);
-        
-        for (var p = 1; p < this.shape.length; ++p)
-        {
-            position = b2Math.AddVV(this.physic.m_position, b2Math.b2MulMV(this.physic.m_R, this.shape[p]));
-            context.lineTo(position.x * scale.x, position.y * scale.y);
-        }
-        
-        position = b2Math.AddVV(this.physic.m_position, b2Math.b2MulMV(this.physic.m_R, this.shape[0]));
-        context.lineTo(position.x, position.y);
-        
-        context.stroke();
-        
-//        
-//        context.strokeStyle = '#00ff00';
-//        context.beginPath();
-//        
-//        var vec;
-//        
-//        context.moveTo(this.physic.m_position.x, this.physic.m_position.y);
-//        vec = b2Math.AddVV(this.physic.m_position, b2Math.b2MulMV(this.physic.m_R, new b2Vec2(0, -puzzlePieceSize)));
-//        context.lineTo(vec.x, vec.y);
-//        
-//        context.stroke();
-//        
-//        
-//        context.strokeStyle = '#0000ff';
-//        context.beginPath();
-//        
-//        context.moveTo(this.physic.m_position.x, this.physic.m_position.y);
-//        vec = b2Math.AddVV(this.physic.m_position, b2Math.b2MulMV(this.physic.m_R, new b2Vec2(puzzlePieceSize, 0)));
-//        context.lineTo(vec.x, vec.y);
-//        
-//        context.stroke();
+//        context.stroke();*/
     }
 };
-function createPuzzlePiece(x, y)
-{
-    var puzzlePiece = new PuzzlePiece();
-    puzzlePiece.initialize(x, y, puzzlePieces.length);
-    puzzlePieces.push(puzzlePiece);
-}
 
 /*
 function createPuzzlePiece(x, y)

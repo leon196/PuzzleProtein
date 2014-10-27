@@ -24,8 +24,6 @@ var tatamiSize = 1;
 var snapage = [];
 var garbage = [];
 
-init();
-
   function init() {
 
      world = new b2World(
@@ -138,12 +136,11 @@ init();
       //
         var listener = new Box2D.Dynamics.b2ContactListener;
         listener.BeginContact = function(contact) {
-            var fixtureA = contact.GetFixtureA();
-            var fixtureB = contact.GetFixtureB();
-            
+            var fixtureA, fixtureB; 
+            fixtureA = contact.GetFixtureA();
+            fixtureB = contact.GetFixtureB();
             if (fixtureA.GetUserData() && fixtureB.GetUserData()) {
-                var puzzlePiece = puzzlePieces[fixtureA.GetUserData().pieceIndex];
-                puzzlePiece.checkPattern(puzzlePieces[fixtureB.GetUserData().pieceIndex]);
+                checkPattern(fixtureA.GetUserData(), fixtureB.GetUserData());
             }
             
         }
@@ -165,29 +162,40 @@ init();
          if (snapage.length > 0) {
              for (var s = 0; s < snapage.length; ++s) {
                  
-                 var first = puzzlePieces[snapage[s][0]];
-                 var second = puzzlePieces[snapage[s][1]];
-                 var point = snapage[s][2];
-                 
-//                 console.log(first);
-                 
-                 var fixDef = new b2FixtureDef;
-                 fixDef.density = 1.0;
-                 fixDef.friction = 0.5;
-                 fixDef.restitution = 0.2;
-                 fixDef.shape = new b2PolygonShape;
-                 fixDef.shape.SetAsOrientedBox(1, 1, point, 0);
+                var first = puzzlePieces[snapage[s][0]];
+                var second = puzzlePieces[snapage[s][1]];
+                var point = snapage[s][2];
+
+//                if (first.body == null) {
+//                    var tmp = first;
+//                    first = second;
+//                    second = tmp;
+//                }
+
+                var fixDef = new b2FixtureDef;
+                fixDef.density = 1.0;
+                fixDef.friction = 0.5;
+                fixDef.restitution = 0.2;
+                fixDef.shape = new b2PolygonShape;
+                fixDef.shape.SetAsOrientedBox(1, 1, point, 0);
+
+                var offset = second.fixture.GetUserData().offset;
 
                 var fixture = first.body.CreateFixture(fixDef);
+
+
+                fixture.SetUserData({ 
+                    offset: new b2Vec2( 
+                        offset.x + point.x, 
+                        offset.y + point.y 
+                    ),
+                    pieceIndex: second.pieceIndex 
+                 });
                  
                  garbage.push(second.body);
+//                 second.body = null;
+                 second.fixture = fixture;
                  
-                 second.origin = point;
-                 second.angle = Math.atan2(-point.y, -point.x);
-                 console.log(point);
-                 console.log(second.angle);
-                 second.body = fixture.GetBody();
-//                 second.
              }
              
              snapage = [];
@@ -229,14 +237,14 @@ init();
             context.fillStyle = "rgba(0, 0, 0, 0.1)";
          context.fillRect(0,0,canvas.width, canvas.height);
 //         context.clearRect(0, 0, canvas.width, canvas.height); 
-         world.DrawDebugData();
+        world.DrawDebugData();
 
-         for (var p = 0; p < puzzlePieces.length; ++p) {
-             var puzzlePiece = puzzlePieces[p];
-             puzzlePiece.draw();
-         }
-
-         drawBackground();
+//         for (var p = 0; p < puzzlePieces.length; ++p) {
+//             var puzzlePiece = puzzlePieces[p];
+//             puzzlePiece.draw();
+//         }
+//
+//         drawBackground();
 
 
         world.ClearForces();

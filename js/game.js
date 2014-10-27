@@ -19,6 +19,8 @@ var context = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+init();
+
 function drawText(x, y, text)
 {
     context.font = '32pt Calibri';
@@ -57,4 +59,77 @@ function drawBackground()
 //    context.lineTo(tatamiSize * scaleDraw, worldLimits.y * scaleDraw);
 //    context.lineTo(tatamiSize * scaleDraw, tatamiSize * scaleDraw);
     context.stroke();
+}
+        
+        
+function checkPattern(infoPieceA, infoPieceB)
+{
+    var pieceRootA = puzzlePieces[infoPieceA.pieceIndex];
+    var pieceRootB = puzzlePieces[infoPieceB.pieceIndex];
+    
+    // Axes
+    var points = [
+        new b2Vec2(0, -1),
+        new b2Vec2(1, 0),
+        new b2Vec2(0, 1),
+        new b2Vec2(-1, 0)
+    ];
+
+    for (var fixtureA = pieceRootA.fixture; fixtureA ; fixtureA = fixtureA.GetNext())
+    {
+        // Edges of pieceA
+        var pieceA = puzzlePieces[fixtureA.GetUserData().pieceIndex];
+        var offsetA = fixtureA.GetUserData().offset;
+        for (var i = 0; i < 4; ++i)
+        {
+            // Get Point
+            var rotation = new b2Mat22();
+            rotation.Set(pieceA.GetAngle());
+            var point = Box2D.Common.Math.b2Math.MulFV(
+                scaleDraw,
+                Box2D.Common.Math.b2Math.AddVV(
+                    pieceA.GetPosition(),
+                    Box2D.Common.Math.b2Math.MulMV(rotation, Box2D.Common.Math.b2Math.AddVV(points[i], offsetA))
+                )
+            );
+            for (var fixtureB = pieceRootB.fixture; fixtureB ; fixtureB = fixtureB.GetNext()) 
+            {
+                // Edges of the pieceB
+                var pieceB = puzzlePieces[fixtureB.GetUserData().pieceIndex];
+                var offsetB = fixtureB.GetUserData().offset;
+                for (var h = 0; h < 4; ++h)
+                {    
+                    // Get Point
+                    rotation = new b2Mat22();
+                    rotation.Set(pieceB.GetAngle());
+                    var point2 = Box2D.Common.Math.b2Math.MulFV(
+                        scaleDraw,
+                        Box2D.Common.Math.b2Math.AddVV(
+                            pieceB.GetPosition(), 
+                            Box2D.Common.Math.b2Math.MulMV(rotation, Box2D.Common.Math.b2Math.AddVV(points[h], offsetB)))
+                    );
+
+                    // Distance Test
+                    var dist = Box2D.Common.Math.b2Math.SubtractVV(point2, point).Length();
+                    if (dist < 16)
+                    {
+                        // Check Complementarity
+                        //if (pieceA.patterns[i] + pieceB.patterns[h] == 1)
+                        //{
+                            // Debug
+                            drawCircle(point, 16);
+                            drawCircle(point2, 16);
+
+                            // Snap
+                            snapage.push([pieceA.pieceIndex, pieceB.pieceIndex, new b2Vec2(points[i].x * 2, points[i].y * 2)]);
+
+                            //
+                            return;
+                        //}
+                    }
+                }
+            }
+        }
+    }
+
 }

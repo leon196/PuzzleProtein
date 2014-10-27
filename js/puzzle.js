@@ -12,6 +12,7 @@ PuzzlePiece = function()
 {
     // Box2d
     this.body;
+    this.fixture;
     // Draw
     this.shape;
     this.origin;
@@ -19,6 +20,24 @@ PuzzlePiece = function()
     // Logic
     this.patterns;
     this.pieceIndex;
+    
+    this.GetPosition = function()
+    {
+        if (this.body != undefined) {
+            return this.body.GetPosition();
+        } else {
+            return new b2Vec2();
+        }
+    }
+    
+    this.GetAngle = function()
+    {
+        if (this.body != undefined) {
+            return this.body.GetAngle();
+        } else {
+            return new b2Vec2();
+        }
+    }
     
 	this.initialize = function(x, y, index)
     {    
@@ -45,12 +64,15 @@ PuzzlePiece = function()
         this.origin = undefined;
         this.angle = undefined;
         
-        var fixture = this.body.CreateFixture(fixDef);
+        this.fixture = this.body.CreateFixture(fixDef);
         
 //        console.log(fixture);
         
         this.pieceIndex = index;
-        fixture.SetUserData({ pieceIndex: index});
+        this.fixture.SetUserData({ 
+            offset: new b2Vec2(),
+            pieceIndex: index
+        });
         
             
 //        this.body.SetUserData({ pieceIndex: index });
@@ -105,14 +127,14 @@ PuzzlePiece = function()
         context.strokeStyle = '#ffffff';
 //        context.fillStyle = '#ff0000';
         context.beginPath();
-        var origin = this.body.GetPosition();
+        var origin = this.GetPosition();
         var position = this.shape[0];       
         
         var angle;
         if (this.angle != undefined) {
-            angle = this.angle + this.body.GetAngle();
+            angle = this.angle + this.GetAngle();
         }   else {
-            angle = this.body.GetAngle();
+            angle = this.GetAngle();
         }
         
         var rotation = new b2Mat22();
@@ -158,7 +180,7 @@ PuzzlePiece = function()
             context.lineTo ( point.x * scaleDraw,  point.y * scaleDraw );
         }
         position = this.shape[0];
-        Box2D.Common.Math.b2Math.AddVV(
+        point = Box2D.Common.Math.b2Math.AddVV(
             origin, 
             Box2D.Common.Math.b2Math.MulMV( 
                 rotation, 
@@ -177,64 +199,5 @@ PuzzlePiece = function()
 //        context.globalCompositeOperation = "destination-in";  
 //        context.globalCompositeOperation = "source-over";  
         context.stroke();
-    },
-        
-        
-    this.checkPattern = function(other)
-    {
-        // Axes
-        var points = [
-            new b2Vec2(0, -1),
-            new b2Vec2(1, 0),
-            new b2Vec2(0, 1),
-            new b2Vec2(-1, 0)
-        ];
-        
-        // Edges of this piece
-        for (var i = 0; i < 4; ++i)
-        {
-            // Get Point
-            var rotation = new b2Mat22();
-            rotation.Set(this.body.GetAngle());
-            var point = Box2D.Common.Math.b2Math.MulFV(
-                scaleDraw,
-                Box2D.Common.Math.b2Math.AddVV(
-                    this.body.GetPosition(), 
-                    Box2D.Common.Math.b2Math.MulMV(rotation, points[i]))
-            );
-            // Edges of the other piece
-            for (var h = 0; h < 4; ++h)
-            {    
-                // Get Point
-                rotation = new b2Mat22();
-                rotation.Set(other.body.GetAngle());
-                var point2 = Box2D.Common.Math.b2Math.MulFV(
-                    scaleDraw,
-                    Box2D.Common.Math.b2Math.AddVV(
-                        other.body.GetPosition(), 
-                        Box2D.Common.Math.b2Math.MulMV(rotation, points[h]))
-                );
-                
-                // Distance Test
-                var dist = Box2D.Common.Math.b2Math.SubtractVV(point2, point).Length();
-                if (dist < 16)
-                {
-                    // Check Complementarity
-                    if (this.patterns[i] + other.patterns[h] == 1)
-                    {
-                        // Debug
-                        drawCircle(point, 16);
-                        drawCircle(point2, 16);
-                        
-                        // Snap
-                        snapage.push([this.pieceIndex, other.pieceIndex, new b2Vec2(points[i].x * 2, points[i].y * 2)]);
-                        
-                        //
-                        return;
-                    }
-                }
-            }
-        }
-        
     }
 };

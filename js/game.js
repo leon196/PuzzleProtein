@@ -8,6 +8,7 @@
 var puzzle;
 var puzzlePieces = [];
 var puzzlePieceSize = 8;
+var jointWeld = undefined;
 //
 //var impulse = 100;
 //var r = 0;
@@ -26,10 +27,18 @@ function drawText(x, y, text)
 
 function drawLine(a, b)
 {
-    context.strokeStyle = '#ffffff';
+    context.strokeStyle = '#00ff00';
     context.beginPath();
     context.moveTo(a.x, a.y);
     context.lineTo(b.x, b.y);
+    context.stroke();
+}
+
+function drawCircle(point, radius)
+{
+    context.strokeStyle = '#00ff00';
+    context.beginPath();
+    context.arc(point.x, point.y, radius, 0, 2 * Math.PI, false);
     context.stroke();
 }
 

@@ -1,159 +1,68 @@
-  
- var    b2Vec2 = Box2D.Common.Math.b2Vec2
-    ,   b2AABB = Box2D.Collision.b2AABB
-    ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
-    ,	b2Body = Box2D.Dynamics.b2Body
-    ,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
-    ,	b2Fixture = Box2D.Dynamics.b2Fixture
-    ,	b2World = Box2D.Dynamics.b2World
-    ,	b2MassData = Box2D.Collision.Shapes.b2MassData
-    ,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
-    ,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
-    ,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
-    ,   b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
-    ,   b2Mat22 = Box2D.Common.Math.b2Mat22
-    ,   b2WeldJointDef = Box2D.Dynamics.Joints.b2WeldJointDef
-    ;
+var b2Math = Box2D.Common.Math.b2Math;  
+var b2Vec2 = Box2D.Common.Math.b2Vec2
+,   b2AABB = Box2D.Collision.b2AABB
+,	b2BodyDef = Box2D.Dynamics.b2BodyDef
+,	b2Body = Box2D.Dynamics.b2Body
+,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+,	b2Fixture = Box2D.Dynamics.b2Fixture
+,	b2World = Box2D.Dynamics.b2World
+,	b2MassData = Box2D.Collision.Shapes.b2MassData
+,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
+,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
+,   b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
+,   b2Mat22 = Box2D.Common.Math.b2Mat22
+,   b2WeldJointDef = Box2D.Dynamics.Joints.b2WeldJointDef
+;
 
+//
 var world;
-var worldLimits;
-var scale = { x: 1, y: 1};
-var scaleDraw;
-var tatamiSize = 1;
 
+//
+var worldScreenRect;
+var worldScreenScale;
+
+//
 var snapage = [];
 var garbage = [];
 
-  function init() {
-
-     world = new b2World(
-           new b2Vec2(0, 10)    //gravity
-        ,  true                 //allow sleep
-     );
+function SetupWorld() 
+{
+    //
+    var screenMax = Math.max(canvas.height, canvas.width);
+    var screenMin = Math.min(canvas.height, canvas.width);
+    var screenRatio = canvas.width / canvas.height;
+    worldScreenScale = 16 / screenMin;
+    worldScreenRect = {
+        x: 0,
+        y: 0,
+        w: screenRatio > 1.0 ? 16 : 16 * screenRatio,
+        h: screenRatio < 1.0 ? 16 : 16 * screenRatio
+    };
+    
+    //
+    world = new b2World( new b2Vec2(0, 10), true );
+    
+    //
+    CreateBounds(worldScreenRect);
       
-      console.log(world);
-
-     var fixDef = new b2FixtureDef;
-     fixDef.density = 1.0;
-     fixDef.friction = 0.5;
-     fixDef.restitution = 0.2;
-
-     var bodyDef = new b2BodyDef;
-
-     //create ground
-     bodyDef.type = b2Body.b2_staticBody;
-     fixDef.shape = new b2PolygonShape;
-      
-      
-      worldLimits = { x: 16, y: 24 };
-      
-      scaleDraw = Math.max(worldLimits.x, worldLimits.y);
-      scaleDraw = Math.min(window.innerWidth / scaleDraw, window.innerHeight / scaleDraw);
-      
-      //
-     fixDef.shape.SetAsBox(worldLimits.x/2, tatamiSize);
-     bodyDef.position.Set(worldLimits.x/2, worldLimits.y);
-     world.CreateBody(bodyDef).CreateFixture(fixDef);
-      
-     bodyDef.position.Set(worldLimits.x/2, 0);
-     world.CreateBody(bodyDef).CreateFixture(fixDef);
-      
-      //
-      
-     fixDef.shape.SetAsBox(tatamiSize, worldLimits.y/2);
-     bodyDef.position.Set(0, worldLimits.y/2);
-     world.CreateBody(bodyDef).CreateFixture(fixDef);
-      
-     bodyDef.position.Set(worldLimits.x, worldLimits.y/2);
-     world.CreateBody(bodyDef).CreateFixture(fixDef);
-
-     //setup debug draw
-     var debugDraw = new b2DebugDraw();
+    //
+    var debugDraw = new b2DebugDraw();
         debugDraw.SetSprite(window.document.getElementById("canvas").getContext("2d"));
-        debugDraw.SetDrawScale(scaleDraw);
+        debugDraw.SetDrawScale(worldScreenScale);
         debugDraw.SetFillAlpha(0);
         debugDraw.SetLineThickness(1.0);
         debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
         world.SetDebugDraw(debugDraw);
-
+    
       
-      
-
-     window.setInterval(update, 1000 / 60);
-
-     //mouse
-
-     var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint;
-     var canvasPosition = getElementPosition(window.document.getElementById("canvas"));
-
-     document.addEventListener("mousedown", function(e) {
-        isMouseDown = true;
-        handleMouseMove(e);
-        document.addEventListener("mousemove", handleMouseMove, true);
-     }, true);
-
-     document.addEventListener("mouseup", function() {
-         
-         if (!mouseJoint) {
-              createPuzzlePiece(mouseX, mouseY);
-         }
-         
-        document.removeEventListener("mousemove", handleMouseMove, true);
-        isMouseDown = false;
-        mouseX = undefined;
-        mouseY = undefined;
-         
-     }, true);
-
-     function handleMouseMove(e) {
-        mouseX = (e.clientX - canvasPosition.x) / scaleDraw;
-        mouseY = (e.clientY - canvasPosition.y) / scaleDraw;
-     };
-
-     function getBodyAtMouse() {
-        mousePVec = new b2Vec2(mouseX, mouseY);
-        var aabb = new b2AABB();
-        aabb.lowerBound.Set(mouseX - 0.001, mouseY - 0.001);
-        aabb.upperBound.Set(mouseX + 0.001, mouseY + 0.001);
-
-        // Query the world for overlapping shapes.
-
-        selectedBody = null;
-        world.QueryAABB(getBodyCB, aabb);
-        return selectedBody;
-     }
-
-     function getBodyCB(fixture) {
-        if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
-           if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), mousePVec)) {
-              selectedBody = fixture.GetBody();
-              return false;
-           }
-        }
-        return true;
-     }
-      
-      //
-        var listener = new Box2D.Dynamics.b2ContactListener;
-        listener.BeginContact = function(contact) {
-            var fixtureA, fixtureB; 
-            fixtureA = contact.GetFixtureA();
-            fixtureB = contact.GetFixtureB();
-            if (fixtureA.GetUserData() && fixtureB.GetUserData()) {
-                checkPattern(fixtureA.GetUserData(), fixtureB.GetUserData());
-            }
-            
-        }
-        listener.EndContact = function(contact) {
-        // console.log(contact.GetFixtureA().GetBody().GetUserData());
-        }
-        listener.PostSolve = function(contact, impulse) {
-
-        }
-        listener.PreSolve = function(contact, oldManifold) {
-
-        }
-        this.world.SetContactListener(listener);
+    // Collision events
+    var listener = new Box2D.Dynamics.b2ContactListener;
+    listener.BeginContact = OnBeginContact;
+    listener.EndContact = OnEndContact;
+    listener.PostSolve = OnPostSolve;
+    listener.PreSolve = OnPreSolve;
+    this.world.SetContactListener(listener);
 
      //update
 
@@ -272,6 +181,10 @@ var garbage = [];
 
         return {x: x, y: y};
      }
+    
+
+    // Start Loop
+    window.setInterval(Update, 1000 / 60);
 
 
   }

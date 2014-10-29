@@ -1,203 +1,188 @@
+// 
+var patterns = [ [ [-0.5, -1], [0, -0.5], [1/2, -1] ],[ [-0.5, -1], [0, -1.5], [0.5, -1] ] ];
+var corners = [ [-1, -1], [1, -1], [1, 1], [-1, 1] ];
 
-function createPuzzlePiece(x, y)
+/***********/
+/* ELEMENT */
+/***********/
+
+function Element()
 {
-    if (x < worldLimits.x && y < worldLimits.y) {
-        var puzzlePiece = new PuzzlePiece();
-        puzzlePiece.initialize(x, y, puzzlePieces.length);
-        puzzlePieces.push(puzzlePiece);
-    }
+    this.position = new b2Vec2();
+    this.angle = 0;
 }
 
-PuzzlePiece = function()
+/*********/
+/* PIECE */
+/*********/
+
+function Piece()
 {
-    // Box2d
-    this.body;
-    this.fixture;
-    // Draw
-    this.shape;
-    this.origin;
-    this.angle;
-    // Logic
+    Element.call(this);
     this.patterns;
-    this.pieceIndex;
-    
-    this.GetPosition = function()
-    {
-        if (this.body != undefined) {
-            return this.body.GetPosition();
-        } else {
-            return new b2Vec2();
+    this.shape;
+    this.puzzleOffset;
+}
+Piece.prototype = new Element();
+Piece.prototype.constructor = Piece;
+
+// Init
+Piece.prototype.Setup = function ()
+{
+    // For logic
+    this.patterns = new Array(4);
+    for (var i = 0; i < 4; ++i) this.patterns[i] = Math.round(Math.random());
+    // For drawing
+    this.shape = new Array(16);
+    // Corners
+    for (var c = 0; c < 4; ++c) {
+        this.shape.push(new b2Vec2(corners[c][0], corners[c][1]));
+        // Patterns
+        for (var p = 0; p < 3; ++p)  {
+            var pattern = patterns[this.patterns[c]];
+            this.shape.push( b2Math.MulMV( new b2Mat22((c / 4) * Math.PI * 2), new b2Vec2(pattern[c][0], pattern[c][1]) ) );
         }
     }
-    
-    this.GetAngle = function()
-    {
-        if (this.body != undefined) {
-            return this.body.GetAngle();
-        } else {
-            return new b2Vec2();
-        }
+    // For compound object
+    this.puzzleOffset = new b2Vec2();
+}
+
+// Render
+Piece.prototype.Draw = function()
+{
+    var p = b2Math.AddVV( b2Math.MulMV( new b2Mat22(this.angle), this.shape[0] ), this.position );
+    StartLine( p.x, p.y, '#ffffff' );
+    for (var i = 1; i < this.shape.length; ++i) {
+        p = b2Math.AddVV( b2Math.MulMV( new b2Mat22(this.angle), this.shape[i] ), this.position );
+        DrawLine( p.x , p.y );
     }
+    p = b2Math.AddVV( b2Math.MulMV( new b2Mat22(this.angle), this.shape[0] ), this.position );
+    EndLine( p.x , p.y );
+};
+
+/**********/
+/* PUZZLE */
+/**********/
+
+function Puzzle()
+{
+    Element.call(this);
+    this.body;
+    this.pieces;
+}
+
+Puzzle.prototype = new Element();
+Puzzle.prototype.constructor = Puzzle;
+
+// Init
+Puzzle.prototype.Setup = function(x_, y_, angle_)
+{
+    //
+    this.position.Set(x_, y_);
+    this.angle = angle_;
     
-	this.initialize = function(x, y, index)
-    {    
-        
-
-         var fixDef = new b2FixtureDef;
-         fixDef.density = 1.0;
-         fixDef.friction = 0.5;
-         fixDef.restitution = 0.2;
-
-         var bodyDef = new b2BodyDef;
-         bodyDef.type = b2Body.b2_dynamicBody;
-         fixDef.shape = new b2PolygonShape;
-        
-//        var polyDef = new b2Pol
-
-          //
-         fixDef.shape.SetAsBox(1, 1);
-        
-         bodyDef.position.Set(x, y);
-        
-          this.body = world.CreateBody(bodyDef);
-        
-        this.origin = undefined;
-        this.angle = undefined;
-        
-        this.fixture = this.body.CreateFixture(fixDef);
-        
-//        console.log(fixture);
-        
-        this.pieceIndex = index;
-        this.fixture.SetUserData({ 
-            offset: new b2Vec2(),
-            pieceIndex: index
-        });
-        
-            
-//        this.body.SetUserData({ pieceIndex: index });
-        
-        this.patterns = [];
-        for (var part = 0; part < 4; ++part) {
-            this.patterns.push(Math.random() >= 0.5 ? 1 : 0);
-        }
-        
-        var size = 1;
-        var assets = [
-            [
-                [-size/2, -size],
-                [0, -size/2],
-                [size/2, -size]
-            ],[
-                [-size/2, -size],
-                [0, -size*1.5],
-                [size/2, -size]
-            ]
-        ];
-        // Corners
-        var shape_ = [
-            [-size, -size], // Top Left
-            [size, -size],  // Top Right
-            [size, size],   // Bottom Right
-            [-size, size]   // Bottom Left
-        ];
-        // Contruct Shape
-        var point;
-        this.shape = [];
-        for (var p = 0; p < 4; ++p) 
-        {
-            // Corner
-            point = new b2Vec2(shape_[p][0], shape_[p][1]);
-            this.shape.push(point);
-            
-            // Pattern
-            var pattern = assets[this.patterns[p]];
-            for (var pat = 0; pat < pattern.length; ++pat) 
-            {
-                var rotation = new b2Mat22();
-                rotation.Set(((p) / 4) * Math.PI * 2);
-                var position = new b2Vec2(pattern[pat][0], pattern[pat][1]);
-                this.shape.push(Box2D.Common.Math.b2Math.MulMV( rotation, position ));
-            }
-        }
-        
-    },
+    //
+    var piece = new Piece();
+    piece.Setup();
+    this.pieces = [];
+    this.pieces.push(piece);
     
-    this.draw = function() {
-        context.strokeStyle = '#ffffff';
-//        context.fillStyle = '#ff0000';
-        context.beginPath();
-        var origin = this.GetPosition();
-        var position = this.shape[0];       
-        
-        var angle;
-        if (this.angle != undefined) {
-            angle = this.angle + this.GetAngle();
-        }   else {
-            angle = this.GetAngle();
-        }
-        
-        var rotation = new b2Mat22();
-        rotation.Set(angle);
-        
-            
-        var offset = new b2Vec2(0,0);
-        if (this.origin != undefined) {
-            offset = this.origin;
-        }
-        
-        
-        var point = Box2D.Common.Math.b2Math.AddVV(
-            origin, 
-            Box2D.Common.Math.b2Math.MulMV( 
-                rotation, 
-                Box2D.Common.Math.b2Math.AddVV(
-                    position,
-                    offset
-                )
-            )
-        );
-        
-        context.moveTo(
-            point.x * scaleDraw, 
-            point.y * scaleDraw);
-        
-        
-        for (var p = 1; p < this.shape.length; ++p)
-        {
-            position = this.shape[p];
-            point = Box2D.Common.Math.b2Math.AddVV(
-                origin, 
-                Box2D.Common.Math.b2Math.MulMV( 
-                    rotation, 
-                    Box2D.Common.Math.b2Math.AddVV(
-                        position,
-                        offset
-                    )
-                )
-            );
-            
-            context.lineTo ( point.x * scaleDraw,  point.y * scaleDraw );
-        }
-        position = this.shape[0];
-        point = Box2D.Common.Math.b2Math.AddVV(
-            origin, 
-            Box2D.Common.Math.b2Math.MulMV( 
-                rotation, 
-                Box2D.Common.Math.b2Math.AddVV(
-                    position,
-                    offset
-                )
-            )
-        );
-        
-        context.lineTo ( point.x * scaleDraw,  point.y * scaleDraw );
+    //
+    this.body = CreateBody();
+    this.body.SetPosition(this.position);
+    
+    //
+    var fixture = AddBoxAtBody(this.body, 0, 0, 0);
+    fixture.piece = this.pieces[0];
+};
 
-//        context.globalCompositeOperation = "xor";
-//        context.globalCompositeOperation = "multiply";
-//        context.fill();      
-//        context.globalCompositeOperation = "destination-in";  
-//        context.globalCompositeOperation = "source-over";  
-        context.stroke();
+// Update
+Puzzle.prototype.Update = function()
+{
+    this.position = this.body.GetPosition();
+    this.angle = this.body.GetAngle();
+    
+    //
+    for (var i = 0; i < this.pieces.length; ++i) {
+        var piece = this.pieces[i];
+        piece.position = this.position;
+        piece.angle = this.angle;
+        piece.Draw();
     }
 };
+
+/*********/
+/* LOGIC */
+/*********/
+     
+function checkPattern(infoPieceA, infoPieceB)
+{
+    var pieceRootA = puzzlePieces[infoPieceA.pieceIndex];
+    var pieceRootB = puzzlePieces[infoPieceB.pieceIndex];
+    
+    // Axes
+    var points = [
+        new b2Vec2(0, -1),
+        new b2Vec2(1, 0),
+        new b2Vec2(0, 1),
+        new b2Vec2(-1, 0)
+    ];
+
+    for (var fixtureA = pieceRootA.fixture; fixtureA ; fixtureA = fixtureA.GetNext())
+    {
+        // Edges of pieceA
+        var pieceA = puzzlePieces[fixtureA.GetUserData().pieceIndex];
+        var offsetA = fixtureA.GetUserData().offset;
+        for (var i = 0; i < 4; ++i)
+        {
+            // Get Point
+            var rotation = new b2Mat22();
+            rotation.Set(pieceA.GetAngle());
+            var point = Box2D.Common.Math.b2Math.MulFV(
+                scaleDraw,
+                Box2D.Common.Math.b2Math.AddVV(
+                    pieceA.GetPosition(),
+                    Box2D.Common.Math.b2Math.MulMV(rotation, Box2D.Common.Math.b2Math.AddVV(points[i], offsetA))
+                )
+            );
+            for (var fixtureB = pieceRootB.fixture; fixtureB ; fixtureB = fixtureB.GetNext()) 
+            {
+                // Edges of the pieceB
+                var pieceB = puzzlePieces[fixtureB.GetUserData().pieceIndex];
+                var offsetB = fixtureB.GetUserData().offset;
+                for (var h = 0; h < 4; ++h)
+                {    
+                    // Get Point
+                    rotation = new b2Mat22();
+                    rotation.Set(pieceB.GetAngle());
+                    var point2 = Box2D.Common.Math.b2Math.MulFV(
+                        scaleDraw,
+                        Box2D.Common.Math.b2Math.AddVV(
+                            pieceB.GetPosition(), 
+                            Box2D.Common.Math.b2Math.MulMV(rotation, Box2D.Common.Math.b2Math.AddVV(points[h], offsetB)))
+                    );
+
+                    // Distance Test
+                    var dist = Box2D.Common.Math.b2Math.SubtractVV(point2, point).Length();
+                    if (dist < 16)
+                    {
+                        // Check Complementarity
+                        //if (pieceA.patterns[i] + pieceB.patterns[h] == 1)
+                        //{
+                            // Debug
+                            drawCircle(point, 16);
+                            drawCircle(point2, 16);
+
+                            // Snap
+                            snapage.push([pieceA.pieceIndex, pieceB.pieceIndex, new b2Vec2(points[i].x * 2, points[i].y * 2)]);
+
+                            //
+                            return;
+                        //}
+                    }
+                }
+            }
+        }
+    }
+
+}

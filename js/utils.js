@@ -19,10 +19,10 @@ function CreateWall(x, y, w, h)
 
 function CreateBounds(rect)
 {
-    CreateWall(rect.x, rect.y, rect.w, 1);
-    CreateWall(rect.x, rect.h, rect.w, 1);
-    CreateWall(rect.x, rect.y, 1, rect.h);
-    CreateWall(rect.w, rect.y, 1, rect.h);
+    CreateWall(rect.x, rect.y - 1, rect.w, 1);
+    CreateWall(rect.x, rect.h + 1, rect.w, 1);
+    CreateWall(rect.x - 1, rect.y, 1, rect.h);
+    CreateWall(rect.w + 1, rect.y, 1, rect.h);
 }
 
 

@@ -83,7 +83,7 @@ function Update()
     context.fillStyle = "rgba(0, 0, 0, 0.1)";
     context.fillRect(0,0,canvas.width, canvas.height);
     
-    //
+    // Update & Render Puzzles
     for (var i = 0; i < puzzles.length; ++i) {
         var puzzle = puzzles[i];
         puzzle.Update();

@@ -39,34 +39,35 @@ Piece.prototype.Setup = function ()
     this.patterns = new Array(4);
     for (var i = 0; i < 4; ++i) this.patterns[i] = Math.random() > 0.5 ? 1 : 0;
     // For drawing
-    this.shape = new Array(16);
+    this.shape = [];
     // Corners
     for (var c = 0; c < 4; ++c) {
         this.shape.push(new b2Vec2(corners[c][0], corners[c][1]));
         // Patterns
-//        for (var p = 0; p < 3; ++p)  {
-//            var pattern = patterns[this.patterns[c]];
-//            console.log(pattern[c][0]);
-//            this.shape.push( 
-//                b2Math.MulMV( 
-//                    new b2Mat22((c / 4) * Math.PI * 2), 
-//                    new b2Vec2(pattern[c][0], pattern[c][1]) ) );
-//        }
+        for (var p = 0; p < 3; ++p)  {
+            var pattern = patterns[this.patterns[c]];
+            var rotation = new b2Mat22();
+            rotation.Set((c / 4) * Math.PI * 2);
+            this.shape.push( b2Math.MulMV( rotation, new b2Vec2(pattern[p][0], pattern[p][1]) ) );
+        }
     }
     // For compound object
     this.puzzleOffset = new b2Vec2();
-}
+};
 
 // Render
 Piece.prototype.Draw = function()
 {
-    var p = b2Math.AddVV( b2Math.MulMV( new b2Mat22(this.angle), this.shape[0] ), this.position );
+    var rotation = new b2Mat22(); rotation.Set(this.angle);
+    var p = b2Math.MulFV( worldScreenScale, b2Math.AddVV( b2Math.MulMV( rotation, this.shape[0] ), this.position ) );
     StartLine( p.x, p.y, '#ffffff' );
+    
     for (var i = 1; i < this.shape.length; ++i) {
-        p = b2Math.AddVV( b2Math.MulMV( new b2Mat22(this.angle), this.shape[i] ), this.position );
+        p = b2Math.MulFV( worldScreenScale, b2Math.AddVV( b2Math.MulMV( rotation, this.shape[i] ), this.position ) );
         DrawLine( p.x , p.y );
     }
-    p = b2Math.AddVV( b2Math.MulMV( new b2Mat22(this.angle), this.shape[0] ), this.position );
+    
+    p = b2Math.MulFV( worldScreenScale, b2Math.AddVV( b2Math.MulMV( rotation, this.shape[0] ), this.position ) );
     EndLine( p.x , p.y );
 };
 
@@ -117,7 +118,7 @@ Puzzle.prototype.Update = function()
         var piece = this.pieces[i];
         piece.position = this.position;
         piece.angle = this.angle;
-//        piece.Draw();
+        piece.Draw();
     }
 };
 

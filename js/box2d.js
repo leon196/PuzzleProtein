@@ -24,21 +24,22 @@ var snapage = [];
 var garbage = [];
 
 //
-var debug = true;
+var debug = false;
 
 function SetupWorld() 
 {
     //
+    var scale = 24;
     var screenMax = Math.max(canvas.height, canvas.width);
     var screenMin = Math.min(canvas.height, canvas.width);
     var screenRatio = canvas.width / canvas.height;
-    worldScreenScale = screenMin / 16;
+    worldScreenScale = screenMin / scale;
     console.log("scale : " + worldScreenScale);
     worldScreenRect = {
         x: 0,
         y: 0,
-        w: screenRatio < 1.0 ? 16 : 16 * screenRatio,
-        h: screenRatio > 1.0 ? 16 : 16 * screenRatio
+        w: screenRatio < 1.0 ? scale : scale * screenRatio,
+        h: screenRatio > 1.0 ? scale : scale * screenRatio
     };
     
     //

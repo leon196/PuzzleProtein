@@ -52,22 +52,36 @@ Piece.prototype.Setup = function ()
         }
     }
     // For compound object
-    this.puzzleOffset = new b2Vec2();
+    this.puzzleOffset = new b2Vec2(0, 0);
+};
+
+Piece.prototype.GetShapePosition = function(index)
+{
+    var rotation = new b2Mat22(); rotation.Set(this.angle);
+    return b2Math.MulFV( 
+        worldScreenScale, 
+        b2Math.AddVV(
+            b2Math.MulMV( 
+                rotation, 
+                b2Math.AddVV( this.puzzleOffset, this.shape[index])
+            ), 
+            this.position
+        ) 
+    ); // Body Position + Puzzle Position
 };
 
 // Render
 Piece.prototype.Draw = function()
 {
-    var rotation = new b2Mat22(); rotation.Set(this.angle);
-    var p = b2Math.MulFV( worldScreenScale, b2Math.AddVV( b2Math.MulMV( rotation, this.shape[0] ), this.position ) );
+    var p = this.GetShapePosition(0);
     StartLine( p.x, p.y, '#ffffff' );
     
     for (var i = 1; i < this.shape.length; ++i) {
-        p = b2Math.MulFV( worldScreenScale, b2Math.AddVV( b2Math.MulMV( rotation, this.shape[i] ), this.position ) );
+        p = this.GetShapePosition(i);
         DrawLine( p.x , p.y );
     }
     
-    p = b2Math.MulFV( worldScreenScale, b2Math.AddVV( b2Math.MulMV( rotation, this.shape[0] ), this.position ) );
+    p = this.GetShapePosition(0);
     EndLine( p.x , p.y );
 };
 
@@ -93,18 +107,33 @@ Puzzle.prototype.Setup = function(x_, y_, angle_)
     this.angle = angle_;
     
     //
-    var piece = new Piece();
-    piece.Setup();
     this.pieces = [];
-    this.pieces.push(piece);
+    var count = 1 + Math.floor(Math.random() * 3);
+    for (var i = 0; i < count; ++i) {
+        var piece = new Piece();
+        piece.Setup();
+        this.pieces.push(piece);
+    }
     
     //
     this.body = CreateBody();
     this.body.SetPosition(this.position);
     
     //
-    var fixture = AddBoxAtBody(this.body, 0, 0, 0);
-    fixture.piece = this.pieces[0];
+    for (var i = 0; i < this.pieces.length; ++i) {
+        var x = i % 2;
+        var y = Math.floor(i / 2);
+        
+        x *= 2;
+        y *= 2;
+        
+        var piece = this.pieces[i];
+        piece.puzzleOffset = new b2Vec2(x, y);
+        
+        var fixture = AddBoxAtBody(this.body, x, y, 0);
+        fixture.SetUserData(this.pieces[i]);
+        
+    }
 };
 
 // Update
@@ -118,7 +147,8 @@ Puzzle.prototype.Update = function()
         var piece = this.pieces[i];
         piece.position = this.position;
         piece.angle = this.angle;
-        piece.Draw();
+        if (!debug)
+            piece.Draw();
     }
 };
 
@@ -126,7 +156,7 @@ Puzzle.prototype.Update = function()
 /* LOGIC */
 /*********/
      
-function checkPattern(infoPieceA, infoPieceB)
+function CheckPattern(infoPieceA, infoPieceB)
 {
     var pieceRootA = puzzlePieces[infoPieceA.pieceIndex];
     var pieceRootB = puzzlePieces[infoPieceB.pieceIndex];

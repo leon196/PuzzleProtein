@@ -1,6 +1,15 @@
+
+function ClearDraw()
+{
+    // Cheap blur effect
+    context.fillStyle = "rgba(0, 0, 0, 0.2)";
+    context.fillRect(0,0,canvas.width, canvas.height);
+}
+
 function StartLine(x, y, color)
 {
     context.strokeStyle = color; 
+    context.fillStyle = '#ff0000';
     context.beginPath();
     context.moveTo(x, y);
 }
@@ -13,7 +22,13 @@ function DrawLine(x, y)
 function EndLine(x, y)
 {
     DrawLine(x, y);
-    //context.globalCompositeOperation = "source-over";  
+    
+    // Overlapping lines
+    context.globalCompositeOperation = "multiply";  
+    context.fill();
+    
+    // Lines
+    context.globalCompositeOperation = "source-over";  
     context.stroke();
 }
 

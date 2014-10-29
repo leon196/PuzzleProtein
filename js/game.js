@@ -3,29 +3,53 @@ var world;
 // Canvas
 var canvas = window.document.getElementById("canvas");
 var context = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
 // Controls
 var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint;
 var canvasPosition = getElementPosition(canvas);
-// Game elements
+// Game
+var loop, restart;
 var puzzles = [];
+
 
 /*********/
 /* START */
 /*********/
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 function OnStart()
 {
+    restart = false;
+    
     // Start Box2D
     SetupWorld();
 
     // Events
+    document.addEventListener("mousemove", OnMouseMove, true);
     document.addEventListener("mousedown", OnMouseDown, true);
     document.addEventListener("mouseup", OnMouseUp, true);
+    document.addEventListener("keydown", OnKeyDown, true);
+    document.addEventListener("keyup", OnKeyUp, true);
     
     //
-    window.setInterval(Update, 1000 / 60);
+    loop = window.setInterval(Update, 1000 / 60);
+}
+
+/***********/
+/* RESTART */
+/***********/
+
+function Restart()
+{
+    for (var i = 0; i < puzzles.length; ++i) {
+        garbage.push(puzzles[i].body);
+    }
+    snapage = [];
+    puzzles = [];
+    if(mouseJoint) {
+        world.DestroyJoint(mouseJoint);
+        mouseJoint = null;
+    }
 }
 
 /*************/
@@ -34,6 +58,10 @@ function OnStart()
 
 function Update()
 {
+    if (restart) {
+        Restart();
+        restart = false;
+    }
          
     // Snap pieces
     if (snapage.length > 0) {
@@ -77,11 +105,10 @@ function Update()
             mouseJoint = null;
         }
     }
-        
-
-    // Clear context (with cheap blur effect)
-    context.fillStyle = "rgba(0, 0, 0, 0.1)";
-    context.fillRect(0,0,canvas.width, canvas.height);
+    
+    //
+    if (!debug)
+        ClearDraw();
     
     // Update & Render Puzzles
     for (var i = 0; i < puzzles.length; ++i) {
@@ -91,16 +118,36 @@ function Update()
 }
 
 /****************/
+/* BOX2D EVENTS */
+/****************/
+
+function OnBeginContact(contact) 
+{
+    var fixtureA, fixtureB; 
+    fixtureA = contact.GetFixtureA();
+    fixtureB = contact.GetFixtureB();
+//    console.log(contact);
+}
+
+function OnEndContact(contact)
+{
+}
+
+function OnPreSolve(contact, oldManifold)
+{
+}
+function OnPostSolve(contact, impulse)
+{
+}
+
+/****************/
 /* MOUSE EVENTS */
 /****************/
     
 function OnMouseDown(event)
 {
     isMouseDown = true;
-    
-    // Enable event
     OnMouseMove(event);
-    document.addEventListener("mousemove", OnMouseMove, true);
 }
 
 function OnMouseMove(event)
@@ -122,30 +169,27 @@ function OnMouseUp(event)
     
     //
     isMouseDown = false;
+}
+
+/******************/
+/* KEYBOARD EVENT */
+/******************/
+
+function OnKeyDown(event)
+{
+}
+
+function OnKeyUp(event)
+{
+    console.log(event.keyCode);
+    var key = event.keyCode;
     
-    // Clean event
-    document.removeEventListener("mousemove", OnMouseMove, true);
-}
-
-/****************/
-/* BOX2D EVENTS */
-/****************/
-
-function OnBeginContact(contact) 
-{
-    var fixtureA, fixtureB; 
-    fixtureA = contact.GetFixtureA();
-    fixtureB = contact.GetFixtureB();
-    console.log('collision');
-}
-
-function OnEndContact(contact)
-{
-}
-
-function OnPreSolve(contact, oldManifold)
-{
-}
-function OnPostSolve(contact, impulse)
-{
+    // D
+    if (key == 68) {
+        debug = !debug
+    }
+    // R
+    else if (key == 82) {
+        restart = true;
+    }
 }

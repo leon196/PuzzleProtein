@@ -1,22 +1,4 @@
-function CreateBody()
-{
-    var bodyDef = new b2BodyDef;
-    bodyDef.type = b2Body.b2_dynamicBody;
 
-    return world.CreateBody(bodyDef);
-}
-
-function AddBoxAtBody(body, x, y, angle)
-{
-    var fixDef = new b2FixtureDef;
-    fixDef.density = 1.0;
-    fixDef.friction = 0.5;
-    fixDef.restitution = 0.2;
-    fixDef.shape = new b2PolygonShape;
-    fixDef.shape.SetAsOrientedBox(1, 1, new b2Vec2(x, y), angle);
-
-    return body.CreateFixture(fixDef);
-}
 
 function CreateWall(x, y, w, h)
 {
@@ -66,4 +48,26 @@ function getBodyCB(fixture) {
         }
     }
     return true;
+}
+
+
+//http://js-tut.aardon.de/js-tut/tutorial/position.html
+function getElementPosition(element) {
+    var elem=element, tagname="", x=0, y=0;
+
+    while((typeof(elem) == "object") && (typeof(elem.tagName) != "undefined")) {
+        y += elem.offsetTop;
+        x += elem.offsetLeft;
+        tagname = elem.tagName.toUpperCase();
+
+        if(tagname == "BODY")
+            elem=0;
+
+            if(typeof(elem) == "object") {
+            if(typeof(elem.offsetParent) == "object")
+            elem = elem.offsetParent;
+        }
+    }
+
+    return {x: x, y: y};
 }

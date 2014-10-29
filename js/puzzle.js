@@ -1,5 +1,11 @@
 // 
-var patterns = [ [ [-0.5, -1], [0, -0.5], [1/2, -1] ],[ [-0.5, -1], [0, -1.5], [0.5, -1] ] ];
+var patterns = [ 
+    [ 
+        [-0.5, -1], [0, -0.5], [0.5, -1] 
+    ],[ 
+        [-0.5, -1], [0, -1.5], [0.5, -1] 
+    ] 
+];
 var corners = [ [-1, -1], [1, -1], [1, 1], [-1, 1] ];
 
 /***********/
@@ -31,17 +37,21 @@ Piece.prototype.Setup = function ()
 {
     // For logic
     this.patterns = new Array(4);
-    for (var i = 0; i < 4; ++i) this.patterns[i] = Math.round(Math.random());
+    for (var i = 0; i < 4; ++i) this.patterns[i] = Math.random() > 0.5 ? 1 : 0;
     // For drawing
     this.shape = new Array(16);
     // Corners
     for (var c = 0; c < 4; ++c) {
         this.shape.push(new b2Vec2(corners[c][0], corners[c][1]));
         // Patterns
-        for (var p = 0; p < 3; ++p)  {
-            var pattern = patterns[this.patterns[c]];
-            this.shape.push( b2Math.MulMV( new b2Mat22((c / 4) * Math.PI * 2), new b2Vec2(pattern[c][0], pattern[c][1]) ) );
-        }
+//        for (var p = 0; p < 3; ++p)  {
+//            var pattern = patterns[this.patterns[c]];
+//            console.log(pattern[c][0]);
+//            this.shape.push( 
+//                b2Math.MulMV( 
+//                    new b2Mat22((c / 4) * Math.PI * 2), 
+//                    new b2Vec2(pattern[c][0], pattern[c][1]) ) );
+//        }
     }
     // For compound object
     this.puzzleOffset = new b2Vec2();
@@ -107,7 +117,7 @@ Puzzle.prototype.Update = function()
         var piece = this.pieces[i];
         piece.position = this.position;
         piece.angle = this.angle;
-        piece.Draw();
+//        piece.Draw();
     }
 };
 

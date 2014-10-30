@@ -6,32 +6,40 @@ function ClearDraw()
     context.fillRect(0,0,canvas.width, canvas.height);
 }
 
-function StartLine(x, y, color)
+function StartShape(x, y)
 {
-    context.strokeStyle = color; 
-    context.fillStyle = '#ff0000';
+    context.strokeStyle = '#ffffff'; 
+//    context.fillStyle = '#ff0000';
     context.beginPath();
     context.moveTo(x, y);
 }
 
-function DrawLine(x, y)
+function DrawShape(x, y)
 {
     context.lineTo(x, y);
 }
 
-function EndLine(x, y)
+function EndShape(x, y)
 {
-    DrawLine(x, y);
+    DrawShape(x, y);
     
-    // Overlapping lines
-    context.globalCompositeOperation = "multiply";  
-    context.fill();
+    // Red layer revealing overlapping lines
+//    context.globalCompositeOperation = "multiply";  
+//    context.fill();
     
     // Lines
     context.globalCompositeOperation = "source-over";  
     context.stroke();
 }
 
+function DrawLine(a, b, color)
+{
+    context.strokeStyle = color; 
+    context.beginPath();
+    context.moveTo(a.x, a.y);
+    context.lineTo(b.x, b.y);
+    context.stroke();
+}
 
 function DrawText(x, y, text)
 {
@@ -39,9 +47,9 @@ function DrawText(x, y, text)
     context.fillText(text, x, y);
 }
 
-function DrawCircle(point, radius)
+function DrawCircle(point, radius, color)
 {
-    context.strokeStyle = '#00ff00';
+    context.strokeStyle = color;
     context.beginPath();
     context.arc(point.x, point.y, radius, 0, 2 * Math.PI, false);
     context.stroke();

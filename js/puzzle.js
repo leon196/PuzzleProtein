@@ -1,90 +1,3 @@
-// 
-var patterns = [ 
-    [ 
-        [-0.5, -1], [0, -0.5], [0.5, -1] 
-    ],[ 
-        [-0.5, -1], [0, -1.5], [0.5, -1] 
-    ] 
-];
-var corners = [ [-1, -1], [1, -1], [1, 1], [-1, 1] ];
-
-/***********/
-/* ELEMENT */
-/***********/
-
-function Element()
-{
-    this.position = new b2Vec2();
-    this.angle = 0;
-}
-
-/*********/
-/* PIECE */
-/*********/
-
-function Piece()
-{
-    Element.call(this);
-    this.patterns;
-    this.shape;
-    this.puzzleOffset;
-}
-Piece.prototype = new Element();
-Piece.prototype.constructor = Piece;
-
-// Init
-Piece.prototype.Setup = function ()
-{
-    // For logic
-    this.patterns = new Array(4);
-    for (var i = 0; i < 4; ++i) this.patterns[i] = Math.random() > 0.5 ? 1 : 0;
-    // For drawing
-    this.shape = [];
-    // Corners
-    for (var c = 0; c < 4; ++c) {
-        this.shape.push(new b2Vec2(corners[c][0], corners[c][1]));
-        // Patterns
-        for (var p = 0; p < 3; ++p)  {
-            var pattern = patterns[this.patterns[c]];
-            var rotation = new b2Mat22();
-            rotation.Set((c / 4) * Math.PI * 2);
-            this.shape.push( b2Math.MulMV( rotation, new b2Vec2(pattern[p][0], pattern[p][1]) ) );
-        }
-    }
-    // For compound object
-    this.puzzleOffset = new b2Vec2(0, 0);
-};
-
-Piece.prototype.GetShapePosition = function(index)
-{
-    var rotation = new b2Mat22(); rotation.Set(this.angle);
-    return b2Math.MulFV( 
-        worldScreenScale, 
-        b2Math.AddVV(
-            b2Math.MulMV( 
-                rotation, 
-                b2Math.AddVV( this.puzzleOffset, this.shape[index])
-            ), 
-            this.position
-        ) 
-    ); // Body Position + Puzzle Position
-};
-
-// Render
-Piece.prototype.Draw = function()
-{
-    var p = this.GetShapePosition(0);
-    StartLine( p.x, p.y, '#ffffff' );
-    
-    for (var i = 1; i < this.shape.length; ++i) {
-        p = this.GetShapePosition(i);
-        DrawLine( p.x , p.y );
-    }
-    
-    p = this.GetShapePosition(0);
-    EndLine( p.x , p.y );
-};
-
 /**********/
 /* PUZZLE */
 /**********/
@@ -108,7 +21,7 @@ Puzzle.prototype.Setup = function(x_, y_, angle_)
     
     //
     this.pieces = [];
-    var count = 1 + Math.floor(Math.random() * 3);
+    var count = 1;// + Math.floor(Math.random() * 2);
     for (var i = 0; i < count; ++i) {
         var piece = new Piece();
         piece.Setup();
@@ -141,12 +54,14 @@ Puzzle.prototype.Update = function()
 {
     this.position = this.body.GetPosition();
     this.angle = this.body.GetAngle();
+    this.rotation.Set(this.angle);
     
     //
     for (var i = 0; i < this.pieces.length; ++i) {
         var piece = this.pieces[i];
         piece.position = this.position;
         piece.angle = this.angle;
+        piece.rotation = this.rotation;
         if (!debug)
             piece.Draw();
     }
@@ -155,6 +70,36 @@ Puzzle.prototype.Update = function()
 /*********/
 /* LOGIC */
 /*********/
+
+function TestSnap(fixtureA, fixtureB)
+{
+    var pieceA = fixtureA.GetUserData();
+    var pieceB = fixtureB.GetUserData();
+    if (pieceA != undefined && pieceB != undefined) {
+        FindSnappingEdges(pieceA, pieceB);
+    }
+}
+
+function FindSnappingEdges(pieceA, pieceB)
+{
+    for (var a = 0; a < 4; ++a) {
+        var pointA = b2Math.AddVV( pieceA.GetPuzzlePosition(), b2Math.MulMV( pieceA.rotation, axes[a] ) );
+        
+        for (var b = 0; b < 4; ++b) {
+            var pointB = b2Math.AddVV( pieceB.GetPuzzlePosition(), b2Math.MulMV( pieceB.rotation, axes[b] ) );
+            var dist = b2Math.SubtractVV(pointA, pointB).Length();
+            
+            if (dist < 1.0) {
+                var a = b2Math.MulFV( worldScreenScale, pointA );
+                var b = b2Math.MulFV( worldScreenScale, pointB );
+                DrawCircle(a, 16, '#00ff00');
+                DrawLine(a, b, '#00ff00');
+                DrawCircle(b, 16, '#00ff00');
+                return;
+            }
+        }
+    }
+}
      
 function CheckPattern(infoPieceA, infoPieceB)
 {

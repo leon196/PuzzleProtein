@@ -30,6 +30,11 @@ function OnStart()
     document.addEventListener("mouseup", OnMouseUp, true);
     document.addEventListener("keydown", OnKeyDown, true);
     document.addEventListener("keyup", OnKeyUp, true);
+    //
+    document.addEventListener("touchstart", touchHandler, true);
+    document.addEventListener("touchmove", touchHandler, true);
+    document.addEventListener("touchend", touchHandler, true);
+    document.addEventListener("touchcancel", touchHandler, true); 
     
     //
     loop = window.setInterval(Update, 1000 / 60);
@@ -123,10 +128,11 @@ function Update()
 
 function OnBeginContact(contact) 
 {
-    var fixtureA, fixtureB; 
-    fixtureA = contact.GetFixtureA();
-    fixtureB = contact.GetFixtureB();
+//    var fixtureA, fixtureB; 
+//    fixtureA = contact.GetFixtureA();
+//    fixtureB = contact.GetFixtureB();
 //    console.log(contact);
+    TestSnap(contact.GetFixtureA(), contact.GetFixtureB());
 }
 
 function OnEndContact(contact)

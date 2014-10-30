@@ -2,7 +2,7 @@
 function ClearDraw()
 {
     // Cheap blur effect
-    context.fillStyle = "rgba(0, 0, 0, 0.2)";
+    context.fillStyle = "rgba(0, 0, 0, 0.1)";
     context.fillRect(0,0,canvas.width, canvas.height);
 }
 
@@ -49,8 +49,8 @@ function DrawText(x, y, text)
 
 function DrawCircle(point, radius, color)
 {
-    context.strokeStyle = color;
+    context.fillStyle = color;
     context.beginPath();
     context.arc(point.x, point.y, radius, 0, 2 * Math.PI, false);
-    context.stroke();
+    context.fill();
 }

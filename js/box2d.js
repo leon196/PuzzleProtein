@@ -29,7 +29,7 @@ var debug = false;
 function SetupWorld() 
 {
     //
-    var scale = 20;
+    var scale = 16;
     var screenMax = Math.max(canvas.height, canvas.width);
     var screenMin = Math.min(canvas.height, canvas.width);
     var screenRatio = canvas.width / canvas.height;

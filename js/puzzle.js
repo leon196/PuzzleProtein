@@ -21,7 +21,7 @@ Puzzle.prototype.Setup = function(x_, y_, angle_)
     
     //
     this.pieces = [];
-    var count = 1;// + Math.floor(Math.random() * 2);
+    var count = 1 + Math.floor(Math.random() * 2);
     for (var i = 0; i < count; ++i) {
         var piece = new Piece();
         piece.Setup();
@@ -89,11 +89,11 @@ function FindSnappingEdges(pieceA, pieceB)
             var pointB = b2Math.AddVV( pieceB.GetPuzzlePosition(), b2Math.MulMV( pieceB.rotation, axes[b] ) );
             var dist = b2Math.SubtractVV(pointA, pointB).Length();
             
-            if (dist < 1.0) {
+            if (dist < 0.2) {
                 var a = b2Math.MulFV( worldScreenScale, pointA );
                 var b = b2Math.MulFV( worldScreenScale, pointB );
                 DrawCircle(a, 16, '#00ff00');
-                DrawLine(a, b, '#00ff00');
+//                DrawLine(a, b, '#00ff00');
                 DrawCircle(b, 16, '#00ff00');
                 return;
             }

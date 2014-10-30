@@ -14,8 +14,8 @@ var puzzles = [];
 /*********/
 /* START */
 /*********/
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width = document.body.clientWidth;
+canvas.height = document.body.clientHeight;
 
 function OnStart()
 {
